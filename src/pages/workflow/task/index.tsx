@@ -1,13 +1,28 @@
-import { useRef, useState } from 'react';
-import { PageContainer, ProTable } from '@ant-design/pro-components';
+import { CheckOutlined, EyeOutlined, UserOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
-import { Button, Tag, Tooltip, Modal, Form, Input, message, Descriptions, Badge } from 'antd';
-import { CheckOutlined, UserOutlined, EyeOutlined } from '@ant-design/icons';
+import { PageContainer, ProTable } from '@ant-design/pro-components';
+import {
+  Badge,
+  Button,
+  Descriptions,
+  Form,
+  Input,
+  Modal,
+  message,
+  Tag,
+  Tooltip,
+} from 'antd';
 import dayjs from 'dayjs';
-import { taskApi, type Task } from '@/services/engine';
-
+import { useRef, useState } from 'react';
+import type { Task } from '@/services/engine';
+import {
+  getTask,
+  postTaskIdClaim,
+  postTaskIdComplete,
+  postTaskIdUnclaim,
+} from '@/services/workflowengine/task';
 export default function TaskPage() {
-  const actionRef = useRef<ActionType>();
+  const actionRef = useRef<ActionType | undefined>(undefined);
   const [taskDetail, setTaskDetail] = useState<Task | null>(null);
   const [completeTask, setCompleteTask] = useState<Task | null>(null);
   const [claimTask, setClaimTask] = useState<Task | null>(null);
@@ -15,7 +30,13 @@ export default function TaskPage() {
   const [claimForm] = Form.useForm();
 
   const columns: ProColumns<Task>[] = [
-    { title: 'ID', dataIndex: 'id', width: 220, copyable: true, ellipsis: true },
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      width: 220,
+      copyable: true,
+      ellipsis: true,
+    },
     { title: 'Name', dataIndex: 'name' },
     {
       title: 'Assignee',
@@ -52,7 +73,11 @@ export default function TaskPage() {
       valueType: 'option',
       render: (_, row) => [
         <Tooltip key="view" title="Detail">
-          <Button type="link" icon={<EyeOutlined />} onClick={() => setTaskDetail(row)} />
+          <Button
+            type="link"
+            icon={<EyeOutlined />}
+            onClick={() => setTaskDetail(row)}
+          />
         </Tooltip>,
         <Tooltip key="claim" title={row.assignee ? 'Unclaim' : 'Claim'}>
           <Button
@@ -60,7 +85,7 @@ export default function TaskPage() {
             icon={<UserOutlined />}
             onClick={() => {
               if (row.assignee) {
-                taskApi.unclaim(row.id).then(() => {
+                postTaskIdUnclaim({ id: row.id }).then(() => {
                   message.success('Unclaimed');
                   actionRef.current?.reload();
                 });
@@ -71,7 +96,11 @@ export default function TaskPage() {
           />
         </Tooltip>,
         <Tooltip key="complete" title="Complete">
-          <Button type="link" icon={<CheckOutlined />} onClick={() => setCompleteTask(row)} />
+          <Button
+            type="link"
+            icon={<CheckOutlined />}
+            onClick={() => setCompleteTask(row)}
+          />
         </Tooltip>,
       ],
     },
@@ -86,7 +115,7 @@ export default function TaskPage() {
       message.error('Variables must be valid JSON');
       return;
     }
-    await taskApi.complete(completeTask!.id, variables);
+    await postTaskIdComplete({ id: completeTask!.id }, { variables });
     message.success('Task completed');
     setCompleteTask(null);
     completeForm.resetFields();
@@ -95,7 +124,7 @@ export default function TaskPage() {
 
   const handleClaim = async () => {
     const values = await claimForm.validateFields();
-    await taskApi.claim(claimTask!.id, values.userId);
+    await postTaskIdClaim({ id: claimTask!.id }, { userId: values.userId });
     message.success('Claimed');
     setClaimTask(null);
     claimForm.resetFields();
@@ -110,7 +139,7 @@ export default function TaskPage() {
         headerTitle={false}
         columns={columns}
         request={async (params) => {
-          const data = await taskApi.list({
+          const data = await getTask({
             processInstanceId: params.processInstanceId,
             processDefinitionKey: params.processDefinitionKey,
             assignee: params.assignee,
@@ -134,14 +163,18 @@ export default function TaskPage() {
         {taskDetail && (
           <Descriptions bordered column={1} size="small">
             <Descriptions.Item label="ID">{taskDetail.id}</Descriptions.Item>
-            <Descriptions.Item label="Name">{taskDetail.name}</Descriptions.Item>
+            <Descriptions.Item label="Name">
+              {taskDetail.name}
+            </Descriptions.Item>
             <Descriptions.Item label="Definition Key">
               {taskDetail.taskDefinitionKey}
             </Descriptions.Item>
             <Descriptions.Item label="Assignee">
               {taskDetail.assignee || 'Unassigned'}
             </Descriptions.Item>
-            <Descriptions.Item label="Form Key">{taskDetail.formKey || 'None'}</Descriptions.Item>
+            <Descriptions.Item label="Form Key">
+              {taskDetail.formKey || 'None'}
+            </Descriptions.Item>
             <Descriptions.Item label="Process Instance">
               {taskDetail.processInstanceId}
             </Descriptions.Item>

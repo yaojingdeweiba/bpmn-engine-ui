@@ -50,4 +50,10 @@ export default {
   'menu.editor.flow': 'Penyusun Alur',
   'menu.editor.mind': 'Penyusun Mind',
   'menu.editor.koni': 'Penyusun Koni',
+  'menu.Dashboard': 'Dashboard',
+  'menu.Deployments': 'Deployments',
+  'menu.Process Definitions': 'Process Definitions',
+  'menu.Process Instances': 'Process Instances',
+  'menu.Tasks': 'Tasks',
+  'menu.History': 'History',
 };

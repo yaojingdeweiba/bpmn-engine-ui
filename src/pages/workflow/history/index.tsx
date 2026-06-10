@@ -1,13 +1,17 @@
-import { PageContainer, ProTable } from '@ant-design/pro-components';
 import type { ProColumns } from '@ant-design/pro-components';
-import { Tag, Tabs } from 'antd';
+import { PageContainer, ProTable } from '@ant-design/pro-components';
+import { Tabs, Tag } from 'antd';
 import dayjs from 'dayjs';
-import {
-  historyApi,
-  type HistoryProcessInstance,
-  type HistoryActivity,
-  type HistoryTask,
+import type {
+  HistoryActivity,
+  HistoryProcessInstance,
+  HistoryTask,
 } from '@/services/engine';
+import {
+  getHistoryActivityInstance,
+  getHistoryProcessInstance,
+  getHistoryTask,
+} from '@/services/workflowengine/history';
 
 const stateColor: Record<string, string> = {
   completed: 'success',
@@ -18,9 +22,19 @@ const stateColor: Record<string, string> = {
 
 function HistoryProcessInstances() {
   const columns: ProColumns<HistoryProcessInstance>[] = [
-    { title: 'ID', dataIndex: 'id', width: 240, copyable: true, ellipsis: true },
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      width: 240,
+      copyable: true,
+      ellipsis: true,
+    },
     { title: 'Process Key', dataIndex: 'processDefinitionKey' },
-    { title: 'Business Key', dataIndex: 'businessKey', render: (v) => v || '-' },
+    {
+      title: 'Business Key',
+      dataIndex: 'businessKey',
+      render: (v) => v || '-',
+    },
     {
       title: 'State',
       dataIndex: 'state',
@@ -53,7 +67,7 @@ function HistoryProcessInstances() {
       search={{ labelWidth: 'auto' }}
       pagination={{ pageSize: 20 }}
       request={async (params) => {
-        const data = await historyApi.processInstances({
+        const data = await getHistoryProcessInstance({
           processDefinitionKey: params.processDefinitionKey,
           businessKey: params.businessKey,
           state: params.state,
@@ -77,7 +91,12 @@ function HistoryActivities() {
       search: false,
       render: (v) => <Tag>{v as string}</Tag>,
     },
-    { title: 'Proc Instance', dataIndex: 'processInstanceId', ellipsis: true, copyable: true },
+    {
+      title: 'Proc Instance',
+      dataIndex: 'processInstanceId',
+      ellipsis: true,
+      copyable: true,
+    },
     {
       title: 'Start Time',
       dataIndex: 'startTime',
@@ -99,7 +118,7 @@ function HistoryActivities() {
       search={{ labelWidth: 'auto' }}
       pagination={{ pageSize: 20 }}
       request={async (params) => {
-        const data = await historyApi.activityInstances({
+        const data = await getHistoryActivityInstance({
           processInstanceId: params.processInstanceId,
           activityType: params.activityType,
           firstResult: ((params.current ?? 1) - 1) * (params.pageSize ?? 20),
@@ -114,10 +133,21 @@ function HistoryActivities() {
 
 function HistoryTasks() {
   const columns: ProColumns<HistoryTask>[] = [
-    { title: 'ID', dataIndex: 'id', width: 220, copyable: true, ellipsis: true },
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      width: 220,
+      copyable: true,
+      ellipsis: true,
+    },
     { title: 'Name', dataIndex: 'name' },
     { title: 'Assignee', dataIndex: 'assignee', render: (v) => v || '-' },
-    { title: 'Proc Instance', dataIndex: 'processInstanceId', ellipsis: true, copyable: true },
+    {
+      title: 'Proc Instance',
+      dataIndex: 'processInstanceId',
+      ellipsis: true,
+      copyable: true,
+    },
     {
       title: 'Start Time',
       dataIndex: 'startTime',
@@ -145,7 +175,7 @@ function HistoryTasks() {
       search={{ labelWidth: 'auto' }}
       pagination={{ pageSize: 20 }}
       request={async (params) => {
-        const data = await historyApi.tasks({
+        const data = await getHistoryTask({
           processInstanceId: params.processInstanceId,
           firstResult: ((params.current ?? 1) - 1) * (params.pageSize ?? 20),
           maxResults: params.pageSize,
@@ -163,8 +193,16 @@ export default function HistoryPage() {
       <Tabs
         defaultActiveKey="instances"
         items={[
-          { key: 'instances', label: 'Process Instances', children: <HistoryProcessInstances /> },
-          { key: 'activities', label: 'Activity Instances', children: <HistoryActivities /> },
+          {
+            key: 'instances',
+            label: 'Process Instances',
+            children: <HistoryProcessInstances />,
+          },
+          {
+            key: 'activities',
+            label: 'Activity Instances',
+            children: <HistoryActivities />,
+          },
           { key: 'tasks', label: 'Tasks', children: <HistoryTasks /> },
         ]}
       />

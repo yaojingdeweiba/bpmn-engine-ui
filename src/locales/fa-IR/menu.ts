@@ -49,4 +49,10 @@ export default {
   'menu.editor.flow': 'ویرایشگر جریان',
   'menu.editor.mind': 'ویرایشگر ذهن',
   'menu.editor.koni': 'ویرایشگر Koni',
+  'menu.Dashboard': 'Dashboard',
+  'menu.Deployments': 'Deployments',
+  'menu.Process Definitions': 'Process Definitions',
+  'menu.Process Instances': 'Process Instances',
+  'menu.Tasks': 'Tasks',
+  'menu.History': 'History',
 };

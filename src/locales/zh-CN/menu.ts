@@ -50,4 +50,10 @@ export default {
   'menu.editor.mind': '脑图编辑器',
   'menu.editor.koni': '拓扑编辑器',
   'menu.chatbot': 'AI 助手',
+  'menu.Dashboard': 'Dashboard',
+  'menu.Deployments': '流程部署',
+  'menu.Process Definitions': '流程定义',
+  'menu.Process Instances': '流程实例',
+  'menu.Tasks': '用户任务',
+  'menu.History': '历史记录',
 };

@@ -1,9 +1,10 @@
-import { useRef, useState, useEffect } from 'react';
-import { ProTable } from '@ant-design/pro-components';
-import type { ActionType, ProColumns } from '@ant-design/pro-components';
-import { Typography, Tag, Tooltip, Space } from 'antd';
 import { CheckCircleFilled, PauseCircleFilled } from '@ant-design/icons';
-import { processDefinitionApi, type ProcessDefinition } from '@/services/engine';
+import type { ActionType, ProColumns } from '@ant-design/pro-components';
+import { ProTable } from '@ant-design/pro-components';
+import { Space, Tag, Tooltip, Typography } from 'antd';
+import { useEffect, useRef, useState } from 'react';
+import type { ProcessDefinition } from '@/services/engine';
+import { getProcessDefinition } from '@/services/workflowengine/processDefinition';
 
 const { Text } = Typography;
 
@@ -14,24 +15,24 @@ type Props = {
 };
 
 export default function DefinitionList({ onSelect }: Props) {
-  const actionRef = useRef<ActionType>();
+  const actionRef = useRef<ActionType | undefined>(undefined);
   const [statMap, setStatMap] = useState<StatMap>({});
   const [total, setTotal] = useState(0);
 
-  useEffect(() => {
-    processDefinitionApi
-      .statistics()
-      .then((rows) => {
-        if (!Array.isArray(rows)) return;
-        const map: StatMap = {};
-        rows.forEach((r: any) => {
-          const id: string = r.definition?.id ?? r.id ?? '';
-          map[id] = { instances: r.instances ?? 0 };
-        });
-        setStatMap(map);
-      })
-      .catch(() => {});
-  }, []);
+  // useEffect(() => {
+  //   processDefinitionApi
+  //     .statistics()
+  //     .then((rows) => {
+  //       if (!Array.isArray(rows)) return;
+  //       const map: StatMap = {};
+  //       rows.forEach((r: any) => {
+  //         const id: string = r.definition?.id ?? r.id ?? '';
+  //         map[id] = { instances: r.instances ?? 0 };
+  //       });
+  //       setStatMap(map);
+  //     })
+  //     .catch(() => {});
+  // }, []);
 
   const columns: ProColumns<ProcessDefinition>[] = [
     {
@@ -72,14 +73,18 @@ export default function DefinitionList({ onSelect }: Props) {
       title: 'Name',
       dataIndex: 'name',
       render: (_, row) => (
-        <Typography.Link onClick={() => onSelect(row)}>{row.name || row.key}</Typography.Link>
+        <Typography.Link onClick={() => onSelect(row)}>
+          {row.name || row.key}
+        </Typography.Link>
       ),
     },
     {
       title: 'Key',
       dataIndex: 'key',
       width: 220,
-      render: (v) => <Text style={{ fontSize: 12, color: '#888' }}>{v as string}</Text>,
+      render: (v) => (
+        <Text style={{ fontSize: 12, color: '#888' }}>{v as string}</Text>
+      ),
     },
     {
       title: 'Version',
@@ -87,7 +92,9 @@ export default function DefinitionList({ onSelect }: Props) {
       search: false,
       width: 80,
       align: 'center',
-      render: (v) => <Tag style={{ fontSize: 11, margin: 0 }}>v{v as number}</Tag>,
+      render: (v) => (
+        <Tag style={{ fontSize: 11, margin: 0 }}>v{v as number}</Tag>
+      ),
     },
     {
       title: 'Tenant ID',
@@ -112,15 +119,21 @@ export default function DefinitionList({ onSelect }: Props) {
       headerTitle={
         <Space>
           <Text strong style={{ fontSize: 16 }}>
-            {total > 0 ? `${total} process definitions deployed` : 'Process Definitions'}
+            {total > 0
+              ? `${total} process definitions deployed`
+              : 'Process Definitions'}
           </Text>
         </Space>
       }
       search={{ labelWidth: 'auto' }}
-      pagination={{ pageSize: 20, showSizeChanger: true, showTotal: (t) => `Total ${t}` }}
+      pagination={{
+        pageSize: 20,
+        showSizeChanger: true,
+        showTotal: (t) => `Total ${t}`,
+      }}
       options={{ reload: true, density: true, setting: false }}
       request={async (params) => {
-        const data = await processDefinitionApi.list({
+        const data = await getProcessDefinition({
           latestVersion: true,
           maxResults: 1000,
           ...(params.name ? { name: params.name } : {}),
@@ -130,12 +143,17 @@ export default function DefinitionList({ onSelect }: Props) {
         setTotal(arr.length);
         const filtered = params.name
           ? arr.filter((d) =>
-              (d.name || d.key).toLowerCase().includes(params.name.toLowerCase()),
+              (d.name || d.key)
+                .toLowerCase()
+                .includes(params.name.toLowerCase()),
             )
           : arr;
         return { data: filtered, success: true, total: filtered.length };
       }}
-      onRow={(row) => ({ onClick: () => onSelect(row), style: { cursor: 'pointer' } })}
+      onRow={(row) => ({
+        onClick: () => onSelect(row),
+        style: { cursor: 'pointer' },
+      })}
     />
   );
 }

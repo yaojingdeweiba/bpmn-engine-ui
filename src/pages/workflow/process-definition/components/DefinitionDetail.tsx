@@ -1,41 +1,50 @@
-import { useState, useEffect, useRef } from 'react';
-import { ProCard, ProTable } from '@ant-design/pro-components';
-import type { ActionType, ProColumns } from '@ant-design/pro-components';
-import React from 'react';
-import {
-  Typography,
-  Tag,
-  Space,
-  Button,
-  Tabs,
-  Badge,
-  Select,
-  Spin,
-  Form,
-  Modal,
-  Input,
-  message,
-  Popconfirm,
-} from 'antd';
 import {
   ArrowLeftOutlined,
-  PlayCircleOutlined,
-  PauseCircleOutlined,
   CheckCircleOutlined,
   DeleteOutlined,
+  PauseCircleOutlined,
+  PlayCircleOutlined,
 } from '@ant-design/icons';
-import dayjs from 'dayjs';
+import type { ActionType, ProColumns } from '@ant-design/pro-components';
+import { ProCard, ProTable } from '@ant-design/pro-components';
 import {
-  processDefinitionApi,
-  processInstanceApi,
-  type ProcessDefinition,
-  type ProcessInstance,
-} from '@/services/engine';
+  Badge,
+  Button,
+  Form,
+  Input,
+  Modal,
+  message,
+  Popconfirm,
+  Select,
+  Space,
+  Spin,
+  Tabs,
+  Tag,
+  Typography,
+} from 'antd';
+import dayjs from 'dayjs';
+import React, { useEffect, useRef, useState } from 'react';
 import BpmnViewer from '@/components/BpmnViewer';
+import type { ProcessDefinition, ProcessInstance } from '@/services/engine';
+import {
+  getProcessDefinition,
+  getProcessDefinitionIdXml,
+  postProcessDefinitionIdStart,
+  postProcessDefinitionIdSuspended,
+} from '@/services/workflowengine/processDefinition';
+import {
+  getProcessInstance,
+  postProcessInstanceIdActivate,
+  postProcessInstanceIdOpenApiDelete,
+  postProcessInstanceIdSuspend,
+} from '@/services/workflowengine/processInstance';
 
 const { Text } = Typography;
 
-const STATE_COLOR: Record<string, 'processing' | 'success' | 'warning' | 'error' | 'default'> = {
+const STATE_COLOR: Record<
+  string,
+  'processing' | 'success' | 'warning' | 'error' | 'default'
+> = {
   running: 'processing',
   completed: 'success',
   suspended: 'warning',
@@ -48,41 +57,48 @@ type Props = {
   onSelectInstance: (inst: ProcessInstance, def: ProcessDefinition) => void;
 };
 
-export default function DefinitionDetail({ initialDef, onBack, onSelectInstance }: Props) {
+export default function DefinitionDetail({
+  initialDef,
+  onBack,
+  onSelectInstance,
+}: Props) {
   const [versions, setVersions] = useState<ProcessDefinition[]>([]);
   const [selectedDef, setSelectedDef] = useState<ProcessDefinition>(initialDef);
   const [xml, setXml] = useState<string | null>(null);
   const [xmlLoading, setXmlLoading] = useState(false);
-  const [instanceCountCurrent, setInstanceCountCurrent] = useState<number | null>(null);
+  const [instanceCountCurrent, setInstanceCountCurrent] = useState<
+    number | null
+  >(null);
   const [instanceCountAll, setInstanceCountAll] = useState<number | null>(null);
   const [startVisible, setStartVisible] = useState(false);
   const [startForm] = Form.useForm();
-  const instanceRef = useRef<ActionType>();
+  const instanceRef = useRef<ActionType | undefined>(undefined);
 
   useEffect(() => {
-    processDefinitionApi
-      .list({ key: initialDef.key, maxResults: 100 })
-      .then((d) => {
-        const sorted = (Array.isArray(d) ? d : []).sort((a, b) => b.version - a.version);
-        setVersions(sorted);
-      });
+    getProcessDefinition({ key: initialDef.key, maxResults: 100 }).then((d) => {
+      const sorted = (Array.isArray(d) ? d : []).sort(
+        (a, b) => b.version - a.version,
+      );
+      setVersions(sorted);
+    });
   }, [initialDef.key]);
 
   useEffect(() => {
     if (!selectedDef) return;
     setXmlLoading(true);
     setXml(null);
-    processDefinitionApi
-      .getXml(selectedDef.id)
-      .then((r) => setXml(r?.bpmn20Xml ?? ''))
+    getProcessDefinitionIdXml({ id: selectedDef.id })
+      .then((r) => setXml(r ?? ''))
       .catch(() => setXml(''))
       .finally(() => setXmlLoading(false));
     setTimeout(() => instanceRef.current?.reload(), 0);
   }, [selectedDef?.id]);
 
   useEffect(() => {
-    processInstanceApi
-      .list({ processDefinitionKey: selectedDef.key, maxResults: 1000 })
+    getProcessInstance({
+      processDefinitionKey: selectedDef.key,
+      maxResults: 1000,
+    })
       .then((d) => {
         const all = Array.isArray(d) ? d : [];
         setInstanceCountAll(all.length);
@@ -102,10 +118,10 @@ export default function DefinitionDetail({ initialDef, onBack, onSelectInstance 
       message.error('Variables must be valid JSON');
       return;
     }
-    await processDefinitionApi.startById(selectedDef.id, {
-      variables,
-      businessKey: values.businessKey,
-    });
+    await postProcessDefinitionIdStart(
+      { id: selectedDef.id },
+      { variables, businessKey: values.businessKey },
+    );
     message.success('Process instance started');
     setStartVisible(false);
     startForm.resetFields();
@@ -161,7 +177,7 @@ export default function DefinitionDetail({ initialDef, onBack, onSelectInstance 
             icon={<PauseCircleOutlined />}
             onClick={async (e) => {
               e.stopPropagation();
-              await processInstanceApi.suspend(row.id);
+              await postProcessInstanceIdSuspend({ id: row.id });
               message.success('Suspended');
               instanceRef.current?.reload();
             }}
@@ -174,7 +190,7 @@ export default function DefinitionDetail({ initialDef, onBack, onSelectInstance 
             icon={<CheckCircleOutlined />}
             onClick={async (e) => {
               e.stopPropagation();
-              await processInstanceApi.activate(row.id);
+              await postProcessInstanceIdActivate({ id: row.id });
               message.success('Activated');
               instanceRef.current?.reload();
             }}
@@ -184,7 +200,7 @@ export default function DefinitionDetail({ initialDef, onBack, onSelectInstance 
           key="d"
           title="Delete this instance?"
           onConfirm={async () => {
-            await processInstanceApi.delete(row.id);
+            await postProcessInstanceIdOpenApiDelete({ id: row.id });
             message.success('Deleted');
             instanceRef.current?.reload();
           }}
@@ -209,8 +225,13 @@ export default function DefinitionDetail({ initialDef, onBack, onSelectInstance 
           value={selectedDef.id}
           size="small"
           style={{ width: '100%' }}
-          options={versions.map((v) => ({ value: v.id, label: `v${v.version}` }))}
-          onChange={(id) => setSelectedDef(versions.find((v) => v.id === id) ?? selectedDef)}
+          options={versions.map((v) => ({
+            value: v.id,
+            label: `v${v.version}`,
+          }))}
+          onChange={(id) =>
+            setSelectedDef(versions.find((v) => v.id === id) ?? selectedDef)
+          }
         />
       ),
     },
@@ -222,7 +243,10 @@ export default function DefinitionDetail({ initialDef, onBack, onSelectInstance 
         </Text>
       ),
     },
-    { label: 'Definition Key', content: <Text style={{ fontSize: 14 }}>{selectedDef.key}</Text> },
+    {
+      label: 'Definition Key',
+      content: <Text style={{ fontSize: 14 }}>{selectedDef.key}</Text>,
+    },
     {
       label: 'Definition Name',
       content: <Text style={{ fontSize: 14 }}>{selectedDef.name || '—'}</Text>,
@@ -251,10 +275,10 @@ export default function DefinitionDetail({ initialDef, onBack, onSelectInstance 
   ];
 
   return (
-    <ProCard split="vertical" bordered>
+    <ProCard split="vertical">
       {/* Left sidebar */}
-      <ProCard colSpan={320} style={{ minHeight: 600 }}>
-        <Space direction="vertical" style={{ width: '100%' }} size={0}>
+      <ProCard colSpan="20%" style={{ minHeight: 600 }}>
+        <Space orientation="vertical" style={{ width: '100%' }} size={0}>
           <Button
             type="text"
             icon={<ArrowLeftOutlined />}
@@ -264,23 +288,43 @@ export default function DefinitionDetail({ initialDef, onBack, onSelectInstance 
           >
             All Processes
           </Button>
-          <Text type="secondary" style={{ fontSize: 12, wordBreak: 'break-all' }}>
+          <Text
+            type="secondary"
+            style={{ fontSize: 12, wordBreak: 'break-all' }}
+          >
             Processes » {selectedDef.name || selectedDef.key}
           </Text>
 
-          <Space direction="vertical" style={{ width: '100%', marginTop: 16 }} size={12}>
+          <Space
+            orientation="vertical"
+            style={{ width: '100%', marginTop: 16 }}
+            size={12}
+          >
             {metaRows.map(({ label, content }) => (
-              <ProCard key={label} size="small" bordered={false} style={{ padding: 0 }}>
-                <div style={{ fontSize: 12, color: '#999', marginBottom: 2 }}>{label}:</div>
-                <div style={{ fontSize: 14, fontWeight: 500, wordBreak: 'break-all' }}>
+              <ProCard key={label} size="small" style={{ padding: 0 }}>
+                <div style={{ fontSize: 12, color: '#999', marginBottom: 2 }}>
+                  {label}:
+                </div>
+                <div
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 500,
+                    wordBreak: 'break-all',
+                  }}
+                >
                   {content}
                 </div>
               </ProCard>
             ))}
           </Space>
 
-          <ProCard size="small" bordered style={{ marginTop: 12 }}>
-            <div style={{ fontSize: 12, color: '#999', marginBottom: 6 }}>Instances Running</div>
+          <ProCard
+            size="small"
+            style={{ marginTop: 12, border: '1px solid #f0f0f0' }}
+          >
+            <div style={{ fontSize: 12, color: '#999', marginBottom: 6 }}>
+              Instances Running
+            </div>
             {instanceCountCurrent !== null ? (
               <>
                 <div style={{ fontSize: 14, marginBottom: 2 }}>
@@ -298,7 +342,11 @@ export default function DefinitionDetail({ initialDef, onBack, onSelectInstance 
             )}
           </ProCard>
 
-          <Space direction="vertical" style={{ width: '100%', marginTop: 12 }} size={8}>
+          <Space
+            orientation="vertical"
+            style={{ width: '100%', marginTop: 12 }}
+            size={8}
+          >
             <Button
               type="primary"
               size="small"
@@ -315,7 +363,10 @@ export default function DefinitionDetail({ initialDef, onBack, onSelectInstance 
                 icon={<CheckCircleOutlined />}
                 block
                 onClick={async () => {
-                  await processDefinitionApi.setSuspended(selectedDef.id, false);
+                  await postProcessDefinitionIdSuspended(
+                    { id: selectedDef.id },
+                    { suspended: false },
+                  );
                   message.success('Activated');
                   setSelectedDef({ ...selectedDef, suspended: false });
                 }}
@@ -328,7 +379,10 @@ export default function DefinitionDetail({ initialDef, onBack, onSelectInstance 
                 icon={<PauseCircleOutlined />}
                 block
                 onClick={async () => {
-                  await processDefinitionApi.setSuspended(selectedDef.id, true);
+                  await postProcessDefinitionIdSuspended(
+                    { id: selectedDef.id },
+                    { suspended: true },
+                  );
                   message.success('Suspended');
                   setSelectedDef({ ...selectedDef, suspended: true });
                 }}
@@ -342,10 +396,18 @@ export default function DefinitionDetail({ initialDef, onBack, onSelectInstance 
 
       {/* Main content */}
       <ProCard direction="column">
-        <ProCard title="Process Diagram" bordered style={{ marginBottom: 12 }}>
+        <ProCard
+          title="Process Diagram"
+          style={{ marginBottom: 12, border: '1px solid #f0f0f0' }}
+        >
           {xmlLoading ? (
             <div
-              style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 320 }}
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: 320,
+              }}
             >
               <Spin />
             </div>
@@ -353,14 +415,19 @@ export default function DefinitionDetail({ initialDef, onBack, onSelectInstance 
             <BpmnViewer xml={xml} height={320} />
           ) : (
             <div
-              style={{ height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{
+                height: 100,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
             >
               <Text type="secondary">No diagram available</Text>
             </div>
           )}
         </ProCard>
 
-        <ProCard bordered>
+        <ProCard style={{ border: '1px solid #f0f0f0' }}>
           <Tabs
             defaultActiveKey="instances"
             size="small"
@@ -382,11 +449,14 @@ export default function DefinitionDetail({ initialDef, onBack, onSelectInstance 
                       showTotal: (t) => `${t} instances`,
                     }}
                     request={async () => {
-                      const data = await processInstanceApi.list({
+                      const data = await getProcessInstance({
                         processDefinitionKey: selectedDef.key,
                         maxResults: 500,
                       });
-                      return { data: Array.isArray(data) ? data : [], success: true };
+                      return {
+                        data: Array.isArray(data) ? data : [],
+                        success: true,
+                      };
                     }}
                     onRow={(row) => ({
                       onClick: () => onSelectInstance(row, selectedDef),
@@ -399,7 +469,9 @@ export default function DefinitionDetail({ initialDef, onBack, onSelectInstance 
                 key: 'incidents',
                 label: 'Incidents',
                 children: (
-                  <div style={{ padding: 24, textAlign: 'center', color: '#888' }}>
+                  <div
+                    style={{ padding: 24, textAlign: 'center', color: '#888' }}
+                  >
                     No incidents
                   </div>
                 ),
@@ -408,7 +480,9 @@ export default function DefinitionDetail({ initialDef, onBack, onSelectInstance 
                 key: 'called',
                 label: 'Called Process Definitions',
                 children: (
-                  <div style={{ padding: 24, textAlign: 'center', color: '#888' }}>
+                  <div
+                    style={{ padding: 24, textAlign: 'center', color: '#888' }}
+                  >
                     No called process definitions
                   </div>
                 ),
@@ -417,7 +491,9 @@ export default function DefinitionDetail({ initialDef, onBack, onSelectInstance 
                 key: 'jobs',
                 label: 'Job Definitions',
                 children: (
-                  <div style={{ padding: 24, textAlign: 'center', color: '#888' }}>
+                  <div
+                    style={{ padding: 24, textAlign: 'center', color: '#888' }}
+                  >
                     No job definitions
                   </div>
                 ),

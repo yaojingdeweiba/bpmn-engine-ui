@@ -1,18 +1,28 @@
-import { useState, useEffect } from 'react';
-import React from 'react';
-import { ProCard } from '@ant-design/pro-components';
-import { Typography, Tag, Space, Button, Tabs, Table, Spin, Badge, message } from 'antd';
 import { ArrowLeftOutlined, ReloadOutlined } from '@ant-design/icons';
-import dayjs from 'dayjs';
+import { ProCard } from '@ant-design/pro-components';
 import {
-  processDefinitionApi,
-  processInstanceApi,
-  taskApi,
-  type ProcessDefinition,
-  type ProcessInstance,
-  type Task,
-} from '@/services/engine';
+  Badge,
+  Button,
+  message,
+  Space,
+  Spin,
+  Table,
+  Tabs,
+  Tag,
+  Typography,
+} from 'antd';
+import dayjs from 'dayjs';
+import React, { useEffect, useState } from 'react';
 import BpmnViewer, { type ActiveActivity } from '@/components/BpmnViewer';
+import type {
+  ProcessDefinition,
+  ProcessInstance,
+  Task,
+} from '@/services/engine';
+import { getProcessDefinitionIdXml } from '@/services/workflowengine/processDefinition';
+import { getProcessInstanceIdActivityInstances } from '@/services/workflowengine/processInstance';
+import { getTask } from '@/services/workflowengine/task';
+import { getProcessInstanceIdVariables } from '@/services/workflowengine/variables';
 
 const { Text } = Typography;
 
@@ -22,13 +32,20 @@ function collectActivityIds(node: any): ActiveActivity[] {
 
   function walk(n: any) {
     const children: any[] = n.childActivityInstances ?? [];
-    if (children.length === 0 && n.activityId && n.activityType !== 'processDefinition') {
+    if (
+      children.length === 0 &&
+      n.activityId &&
+      n.activityType !== 'processDefinition'
+    ) {
       acc[n.activityId] = (acc[n.activityId] ?? 0) + 1;
     }
     children.forEach(walk);
   }
   walk(node);
-  return Object.entries(acc).map(([activityId, count]) => ({ activityId, count }));
+  return Object.entries(acc).map(([activityId, count]) => ({
+    activityId,
+    count,
+  }));
 }
 
 type Variable = { name: string; type: string; value: unknown; scope: string };
@@ -42,7 +59,9 @@ type Props = {
 export default function InstanceDetail({ instance, def, onBack }: Props) {
   const [xml, setXml] = useState<string | null>(null);
   const [xmlLoading, setXmlLoading] = useState(true);
-  const [activeActivities, setActiveActivities] = useState<ActiveActivity[]>([]);
+  const [activeActivities, setActiveActivities] = useState<ActiveActivity[]>(
+    [],
+  );
   const [variables, setVariables] = useState<Variable[]>([]);
   const [variablesLoading, setVariablesLoading] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -51,17 +70,15 @@ export default function InstanceDetail({ instance, def, onBack }: Props) {
 
   useEffect(() => {
     setXmlLoading(true);
-    processDefinitionApi
-      .getXml(def.id)
-      .then((r) => setXml(r?.bpmn20Xml ?? ''))
+    getProcessDefinitionIdXml({ id: def.id })
+      .then((r) => setXml(r ?? ''))
       .catch(() => setXml(''))
       .finally(() => setXmlLoading(false));
   }, [def.id]);
 
   useEffect(() => {
     if (instance.state !== 'running' && instance.state !== 'suspended') return;
-    processInstanceApi
-      .activityInstances(instance.id)
+    getProcessInstanceIdActivityInstances({ id: instance.id })
       .then((tree: any) => setActiveActivities(collectActivityIds(tree)))
       .catch(() => setActiveActivities([]));
   }, [instance.id, instance.state]);
@@ -69,8 +86,7 @@ export default function InstanceDetail({ instance, def, onBack }: Props) {
   useEffect(() => {
     if (activeTab !== 'variables') return;
     setVariablesLoading(true);
-    processInstanceApi
-      .getVariables(instance.id)
+    getProcessInstanceIdVariables({ id: instance.id })
       .then((data: Record<string, { value: unknown; type: string }>) => {
         setVariables(
           Object.entries(data ?? {}).map(([name, v]) => ({
@@ -88,8 +104,7 @@ export default function InstanceDetail({ instance, def, onBack }: Props) {
   useEffect(() => {
     if (activeTab !== 'tasks') return;
     setTasksLoading(true);
-    taskApi
-      .list({ processInstanceId: instance.id, maxResults: 100 })
+    getTask({ processInstanceId: instance.id, maxResults: 100 })
       .then((d) => setTasks(Array.isArray(d) ? d : []))
       .catch(() => setTasks([]))
       .finally(() => setTasksLoading(false));
@@ -119,9 +134,12 @@ export default function InstanceDetail({ instance, def, onBack }: Props) {
       content: (
         <Badge
           status={
-            { running: 'processing', completed: 'success', suspended: 'warning', failed: 'error' }[
-              instance.state
-            ] as any
+            {
+              running: 'processing',
+              completed: 'success',
+              suspended: 'warning',
+              failed: 'error',
+            }[instance.state] as any
           }
           text={<Text style={{ fontSize: 14 }}>{instance.state}</Text>}
         />
@@ -131,7 +149,9 @@ export default function InstanceDetail({ instance, def, onBack }: Props) {
       label: 'Start Time',
       content: (
         <Text style={{ fontSize: 14 }}>
-          {instance.startTime ? dayjs(instance.startTime).format('YYYY-MM-DD HH:mm:ss') : '—'}
+          {instance.startTime
+            ? dayjs(instance.startTime).format('YYYY-MM-DD HH:mm:ss')
+            : '—'}
         </Text>
       ),
     },
@@ -159,7 +179,10 @@ export default function InstanceDetail({ instance, def, onBack }: Props) {
         </Text>
       ),
     },
-    { label: 'Definition Key', content: <Text style={{ fontSize: 14 }}>{def.key}</Text> },
+    {
+      label: 'Definition Key',
+      content: <Text style={{ fontSize: 14 }}>{def.key}</Text>,
+    },
     {
       label: 'Tenant ID',
       content: def.tenantId ? (
@@ -181,7 +204,7 @@ export default function InstanceDetail({ instance, def, onBack }: Props) {
   ];
 
   return (
-    <ProCard split="vertical" bordered>
+    <ProCard split="vertical">
       {/* Left sidebar */}
       <ProCard colSpan={280} style={{ minHeight: 600 }}>
         <Space direction="vertical" style={{ width: '100%' }} size={0}>
@@ -194,15 +217,30 @@ export default function InstanceDetail({ instance, def, onBack }: Props) {
           >
             {def.name || def.key}
           </Button>
-          <Text type="secondary" style={{ fontSize: 12, wordBreak: 'break-all' }}>
+          <Text
+            type="secondary"
+            style={{ fontSize: 12, wordBreak: 'break-all' }}
+          >
             {def.name || def.key} » {shortId(instance.id)}
           </Text>
 
-          <Space direction="vertical" style={{ width: '100%', marginTop: 16 }} size={12}>
+          <Space
+            direction="vertical"
+            style={{ width: '100%', marginTop: 16 }}
+            size={12}
+          >
             {metaRows.map(({ label, content }) => (
               <div key={label}>
-                <div style={{ fontSize: 12, color: '#999', marginBottom: 2 }}>{label}:</div>
-                <div style={{ fontSize: 14, fontWeight: 500, wordBreak: 'break-all' }}>
+                <div style={{ fontSize: 12, color: '#999', marginBottom: 2 }}>
+                  {label}:
+                </div>
+                <div
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 500,
+                    wordBreak: 'break-all',
+                  }}
+                >
                   {content}
                 </div>
               </div>
@@ -215,8 +253,7 @@ export default function InstanceDetail({ instance, def, onBack }: Props) {
       <ProCard direction="column">
         <ProCard
           title="Process Diagram"
-          bordered
-          style={{ marginBottom: 12 }}
+          style={{ marginBottom: 12, border: '1px solid #f0f0f0' }}
           extra={
             activeActivities.length > 0 ? (
               <Tag color="blue" style={{ fontSize: 11 }}>
@@ -237,7 +274,11 @@ export default function InstanceDetail({ instance, def, onBack }: Props) {
               <Spin />
             </div>
           ) : xml ? (
-            <BpmnViewer xml={xml} height={320} activeActivities={activeActivities} />
+            <BpmnViewer
+              xml={xml}
+              height={320}
+              activeActivities={activeActivities}
+            />
           ) : (
             <div
               style={{
@@ -252,7 +293,7 @@ export default function InstanceDetail({ instance, def, onBack }: Props) {
           )}
         </ProCard>
 
-        <ProCard bordered>
+        <ProCard style={{ border: '1px solid #f0f0f0' }}>
           <Tabs
             activeKey={activeTab}
             onChange={setActiveTab}
@@ -283,7 +324,11 @@ export default function InstanceDetail({ instance, def, onBack }: Props) {
                             style={{ fontSize: 12, maxWidth: 300 }}
                             ellipsis={{ tooltip: String(v) }}
                           >
-                            {v == null ? <Text type="secondary">null</Text> : String(v)}
+                            {v == null ? (
+                              <Text type="secondary">null</Text>
+                            ) : (
+                              String(v)
+                            )}
                           </Text>
                         ),
                       },
@@ -291,7 +336,9 @@ export default function InstanceDetail({ instance, def, onBack }: Props) {
                         title: 'Scope',
                         dataIndex: 'scope',
                         render: (v) => (
-                          <Typography.Link style={{ fontSize: 12 }}>{v}</Typography.Link>
+                          <Typography.Link style={{ fontSize: 12 }}>
+                            {v}
+                          </Typography.Link>
                         ),
                       },
                     ]}
@@ -303,7 +350,9 @@ export default function InstanceDetail({ instance, def, onBack }: Props) {
                 key: 'incidents',
                 label: 'Incidents',
                 children: (
-                  <div style={{ padding: 24, textAlign: 'center', color: '#888' }}>
+                  <div
+                    style={{ padding: 24, textAlign: 'center', color: '#888' }}
+                  >
                     No incidents
                   </div>
                 ),
@@ -312,7 +361,9 @@ export default function InstanceDetail({ instance, def, onBack }: Props) {
                 key: 'called',
                 label: 'Called Process Instances',
                 children: (
-                  <div style={{ padding: 24, textAlign: 'center', color: '#888' }}>
+                  <div
+                    style={{ padding: 24, textAlign: 'center', color: '#888' }}
+                  >
                     No called process instances
                   </div>
                 ),
@@ -344,7 +395,9 @@ export default function InstanceDetail({ instance, def, onBack }: Props) {
                         title: 'Task Key',
                         dataIndex: 'taskDefinitionKey',
                         render: (v) => (
-                          <Text style={{ fontSize: 11, color: '#888' }}>{v}</Text>
+                          <Text style={{ fontSize: 11, color: '#888' }}>
+                            {v}
+                          </Text>
                         ),
                       },
                     ]}
@@ -356,14 +409,20 @@ export default function InstanceDetail({ instance, def, onBack }: Props) {
                 key: 'jobs',
                 label: 'Jobs',
                 children: (
-                  <div style={{ padding: 24, textAlign: 'center', color: '#888' }}>No jobs</div>
+                  <div
+                    style={{ padding: 24, textAlign: 'center', color: '#888' }}
+                  >
+                    No jobs
+                  </div>
                 ),
               },
               {
                 key: 'external',
                 label: 'External Tasks',
                 children: (
-                  <div style={{ padding: 24, textAlign: 'center', color: '#888' }}>
+                  <div
+                    style={{ padding: 24, textAlign: 'center', color: '#888' }}
+                  >
                     No external tasks
                   </div>
                 ),

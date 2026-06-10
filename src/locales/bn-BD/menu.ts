@@ -49,4 +49,10 @@ export default {
   'menu.editor.flow': 'ফ্লো এডিটর',
   'menu.editor.mind': 'মাইন্ড এডিটর',
   'menu.editor.koni': 'কোনি সম্পাদক',
+  'menu.Dashboard': 'Dashboard',
+  'menu.Deployments': 'Deployments',
+  'menu.Process Definitions': 'Process Definitions',
+  'menu.Process Instances': 'Process Instances',
+  'menu.Tasks': 'Tasks',
+  'menu.History': 'History',
 };

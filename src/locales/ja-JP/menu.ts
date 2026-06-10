@@ -49,4 +49,10 @@ export default {
   'menu.editor.flow': 'フローエディタ',
   'menu.editor.mind': 'マインドエディター',
   'menu.editor.koni': 'コニエディター',
+  'menu.Dashboard': 'Dashboard',
+  'menu.Deployments': 'Deployments',
+  'menu.Process Definitions': 'Process Definitions',
+  'menu.Process Instances': 'Process Instances',
+  'menu.Tasks': 'Tasks',
+  'menu.History': 'History',
 };

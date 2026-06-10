@@ -1,12 +1,16 @@
 import { LinkOutlined } from '@ant-design/icons';
 import type { Settings as LayoutSettings } from '@ant-design/pro-components';
 import { SettingDrawer } from '@ant-design/pro-components';
+import setupLocatorUI from '@locator/runtime';
 import type { RequestConfig, RunTimeLayoutConfig } from '@umijs/max';
 import { history, Link } from '@umijs/max';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import React from 'react';
 
+if (process.env.NODE_ENV === 'development') {
+  setupLocatorUI();
+}
 // Initialize dayjs plugins globally
 dayjs.extend(relativeTime);
 

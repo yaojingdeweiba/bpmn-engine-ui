@@ -1,16 +1,31 @@
-import { useRef, useState } from 'react';
-import { PageContainer, ProTable } from '@ant-design/pro-components';
-import type { ActionType, ProColumns } from '@ant-design/pro-components';
-import { Button, Tag, Tooltip, Popconfirm, message, Modal, Descriptions } from 'antd';
 import {
-  EyeOutlined,
-  DeleteOutlined,
-  PauseCircleOutlined,
-  CheckCircleOutlined,
   ApartmentOutlined,
+  CheckCircleOutlined,
+  DeleteOutlined,
+  EyeOutlined,
+  PauseCircleOutlined,
 } from '@ant-design/icons';
+import type { ActionType, ProColumns } from '@ant-design/pro-components';
+import { PageContainer, ProTable } from '@ant-design/pro-components';
+import {
+  Button,
+  Descriptions,
+  Modal,
+  message,
+  Popconfirm,
+  Tag,
+  Tooltip,
+} from 'antd';
 import dayjs from 'dayjs';
-import { processInstanceApi, type ProcessInstance } from '@/services/engine';
+import { useRef, useState } from 'react';
+import type { ProcessInstance } from '@/services/engine';
+import {
+  getProcessInstance,
+  getProcessInstanceIdActivityInstances,
+  postProcessInstanceIdActivate,
+  postProcessInstanceIdOpenApiDelete,
+  postProcessInstanceIdSuspend,
+} from '@/services/workflowengine/processInstance';
 
 const stateColor: Record<string, string> = {
   running: 'processing',
@@ -20,14 +35,24 @@ const stateColor: Record<string, string> = {
 };
 
 export default function ProcessInstancePage() {
-  const actionRef = useRef<ActionType>();
+  const actionRef = useRef<ActionType | undefined>(undefined);
   const [detail, setDetail] = useState<ProcessInstance | null>(null);
   const [activities, setActivities] = useState<any>(null);
 
   const columns: ProColumns<ProcessInstance>[] = [
-    { title: 'ID', dataIndex: 'id', width: 240, copyable: true, ellipsis: true },
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      width: 240,
+      copyable: true,
+      ellipsis: true,
+    },
     { title: 'Process Key', dataIndex: 'processDefinitionKey' },
-    { title: 'Business Key', dataIndex: 'businessKey', render: (v) => v || '-' },
+    {
+      title: 'Business Key',
+      dataIndex: 'businessKey',
+      render: (v) => v || '-',
+    },
     {
       title: 'State',
       dataIndex: 'state',
@@ -51,14 +76,20 @@ export default function ProcessInstancePage() {
       valueType: 'option',
       render: (_, row) => [
         <Tooltip key="view" title="Detail">
-          <Button type="link" icon={<EyeOutlined />} onClick={() => setDetail(row)} />
+          <Button
+            type="link"
+            icon={<EyeOutlined />}
+            onClick={() => setDetail(row)}
+          />
         </Tooltip>,
         <Tooltip key="acts" title="Activity Instances">
           <Button
             type="link"
             icon={<ApartmentOutlined />}
             onClick={async () => {
-              const res = await processInstanceApi.activityInstances(row.id);
+              const res = await getProcessInstanceIdActivityInstances({
+                id: row.id,
+              });
               setActivities(res);
             }}
           />
@@ -69,7 +100,7 @@ export default function ProcessInstancePage() {
               type="link"
               icon={<PauseCircleOutlined />}
               onClick={async () => {
-                await processInstanceApi.suspend(row.id);
+                await postProcessInstanceIdSuspend({ id: row.id });
                 message.success('Suspended');
                 actionRef.current?.reload();
               }}
@@ -81,7 +112,7 @@ export default function ProcessInstancePage() {
               type="link"
               icon={<CheckCircleOutlined />}
               onClick={async () => {
-                await processInstanceApi.activate(row.id);
+                await postProcessInstanceIdActivate({ id: row.id });
                 message.success('Activated');
                 actionRef.current?.reload();
               }}
@@ -92,7 +123,7 @@ export default function ProcessInstancePage() {
           key="del"
           title="Delete this instance?"
           onConfirm={async () => {
-            await processInstanceApi.delete(row.id);
+            await postProcessInstanceIdOpenApiDelete({ id: row.id });
             message.success('Deleted');
             actionRef.current?.reload();
           }}
@@ -111,7 +142,7 @@ export default function ProcessInstancePage() {
         headerTitle={false}
         columns={columns}
         request={async (params) => {
-          const data = await processInstanceApi.list({
+          const data = await getProcessInstance({
             processDefinitionKey: params.processDefinitionKey,
             businessKey: params.businessKey,
             state: params.state,
@@ -145,10 +176,14 @@ export default function ProcessInstancePage() {
               <Tag color={stateColor[detail.state]}>{detail.state}</Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Start Time">
-              {detail.startTime ? dayjs(detail.startTime).format('YYYY-MM-DD HH:mm:ss') : '-'}
+              {detail.startTime
+                ? dayjs(detail.startTime).format('YYYY-MM-DD HH:mm:ss')
+                : '-'}
             </Descriptions.Item>
             <Descriptions.Item label="End Time">
-              {detail.endTime ? dayjs(detail.endTime).format('YYYY-MM-DD HH:mm:ss') : '-'}
+              {detail.endTime
+                ? dayjs(detail.endTime).format('YYYY-MM-DD HH:mm:ss')
+                : '-'}
             </Descriptions.Item>
           </Descriptions>
         )}

@@ -1,35 +1,35 @@
-import { useRef, useState } from 'react';
-import { PageContainer, ProTable } from '@ant-design/pro-components';
-import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import {
-  Button,
-  Modal,
-  Upload,
-  Form,
-  Input,
-  Tag,
-  Tooltip,
-  Popconfirm,
-  message,
-  Tabs,
-  Spin,
-  Empty,
-} from 'antd';
-import {
-  PlusOutlined,
   DeleteOutlined,
   EyeOutlined,
   InboxOutlined,
   PartitionOutlined,
+  PlusOutlined,
 } from '@ant-design/icons';
-import dayjs from 'dayjs';
+import type { ActionType, ProColumns } from '@ant-design/pro-components';
+import { PageContainer, ProTable } from '@ant-design/pro-components';
 import {
-  deploymentApi,
-  processDefinitionApi,
-  type Deployment,
-  type ProcessDefinition,
-} from '@/services/engine';
+  Button,
+  Empty,
+  Form,
+  Input,
+  Modal,
+  message,
+  Popconfirm,
+  Spin,
+  Tabs,
+  Tag,
+  Tooltip,
+  Upload,
+} from 'antd';
+import dayjs from 'dayjs';
+import { useRef, useState } from 'react';
 import BpmnViewer from '@/components/BpmnViewer';
+import {
+  type Deployment,
+  deploymentApi,
+  type ProcessDefinition,
+  processDefinitionApi,
+} from '@/services/engine';
 
 type DiagramState = {
   loading: boolean;
@@ -37,15 +37,24 @@ type DiagramState = {
 };
 
 export default function DeploymentPage() {
-  const actionRef = useRef<ActionType>();
+  const actionRef = useRef<ActionType | undefined>(undefined);
   const [deployOpen, setDeployOpen] = useState(false);
   const [detail, setDetail] = useState<Deployment | null>(null);
   const [diagramOpen, setDiagramOpen] = useState(false);
-  const [diagram, setDiagram] = useState<DiagramState>({ loading: false, defs: [] });
+  const [diagram, setDiagram] = useState<DiagramState>({
+    loading: false,
+    defs: [],
+  });
   const [form] = Form.useForm();
 
   const columns: ProColumns<Deployment>[] = [
-    { title: 'ID', dataIndex: 'id', width: 240, copyable: true, ellipsis: true },
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      width: 240,
+      copyable: true,
+      ellipsis: true,
+    },
     { title: 'Name', dataIndex: 'name' },
     {
       title: 'Tenant',
@@ -89,7 +98,11 @@ export default function DeploymentPage() {
           />
         </Tooltip>,
         <Tooltip key="view" title="View Detail">
-          <Button type="link" icon={<EyeOutlined />} onClick={() => setDetail(row)} />
+          <Button
+            type="link"
+            icon={<EyeOutlined />}
+            onClick={() => setDetail(row)}
+          />
         </Tooltip>,
         <Popconfirm
           key="del"
@@ -178,7 +191,11 @@ export default function DeploymentPage() {
             getValueFromEvent={(e) => e?.fileList}
             rules={[{ required: true, message: 'Please select a BPMN file' }]}
           >
-            <Upload.Dragger accept=".bpmn,.xml" beforeUpload={() => false} maxCount={1}>
+            <Upload.Dragger
+              accept=".bpmn,.xml"
+              beforeUpload={() => false}
+              maxCount={1}
+            >
               <p className="ant-upload-drag-icon">
                 <InboxOutlined />
               </p>
@@ -220,7 +237,14 @@ export default function DeploymentPage() {
                       key: 'xml',
                       label: 'XML',
                       children: (
-                        <pre style={{ fontSize: 11, overflow: 'auto', maxHeight: 500, margin: 0 }}>
+                        <pre
+                          style={{
+                            fontSize: 11,
+                            overflow: 'auto',
+                            maxHeight: 500,
+                            margin: 0,
+                          }}
+                        >
                           {d.xml}
                         </pre>
                       ),
