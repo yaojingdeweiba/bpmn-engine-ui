@@ -2,7 +2,7 @@
 /* eslint-disable */
 import { request } from "@umijs/max";
 
-/** Correlate a message to a waiting process instance POST /message */
+/** Correlate a message to a waiting process instance POST /workflowengine/message */
 export async function postMessage(
   body: {
     /** Message name as defined in BPMN */
@@ -17,7 +17,7 @@ export async function postMessage(
   },
   options?: { [key: string]: any }
 ) {
-  return request<any>("/message", {
+  return request<any>("/workflowengine/message", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -27,7 +27,7 @@ export async function postMessage(
   });
 }
 
-/** Throw a named signal to all waiting process instances POST /signal */
+/** Throw a named signal to all waiting process instances POST /workflowengine/signal */
 export async function postSignal(
   body: {
     /** Signal name as defined in BPMN */
@@ -38,7 +38,7 @@ export async function postSignal(
   },
   options?: { [key: string]: any }
 ) {
-  return request<any>("/signal", {
+  return request<any>("/workflowengine/signal", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

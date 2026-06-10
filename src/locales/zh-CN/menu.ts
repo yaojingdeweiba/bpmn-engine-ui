@@ -56,4 +56,8 @@ export default {
   'menu.Process Instances': '流程实例',
   'menu.Tasks': '用户任务',
   'menu.History': '历史记录',
+  'menu.欢迎': '欢迎',
+  'menu.管理页': '管理页',
+  'menu.管理页.二级管理页': '二级管理页',
+  'menu.查询表格': '查询表格',
 };

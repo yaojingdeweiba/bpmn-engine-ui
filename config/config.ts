@@ -202,10 +202,10 @@ export default defineConfig({
     {
       requestLibPath: "import { request } from '@umijs/max'",
       // 或者使用在线的版本
-       //schemaPath: "http://localhost:3000/docs/json",
-      schemaPath: join(__dirname, 'oneapi.json'),
+       schemaPath: "http://localhost:3000/workflowengine/docs/json",
+      //schemaPath: join(__dirname, 'oneapi.json'),
       mock: false,
-      //projectName: 'workflowengine',
+      projectName: 'workflowengine',
     },
   ],
 

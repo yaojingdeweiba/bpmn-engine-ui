@@ -12,11 +12,10 @@
 export default {
   // 如果需要自定义本地开发服务器  请取消注释按需调整
   dev: {
-    // Proxy workflow engine API to local backend (port 3000)
-    '/workflow/api/': {
+    // Keep /workflowengine prefix because backend base path is /workflowengine
+    '/workflowengine/': {
       target: 'http://localhost:3000',
       changeOrigin: true,
-      pathRewrite: { '^/workflow/api': '' },
     },
   },
   /**

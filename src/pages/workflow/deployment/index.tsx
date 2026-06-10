@@ -26,11 +26,11 @@ import { useRef, useState } from 'react';
 import BpmnViewer from '@/components/BpmnViewer';
 import {
   type Deployment,
-  deploymentApi,
   type ProcessDefinition,
-  processDefinitionApi,
 } from '@/services/engine';
-
+import {postDeploymentIdOpenApiDelete,getDeployment,
+  postDeploymentCreate} from '@/services/workflowengine/deployment'
+import {getProcessDefinitionIdXml} from '@/services/workflowengine/processDefinition'
 type DiagramState = {
   loading: boolean;
   defs: Array<ProcessDefinition & { xml?: string }>;
@@ -77,8 +77,8 @@ export default function DeploymentPage() {
             onClick={async () => {
               setDiagramOpen(true);
               setDiagram({ loading: true, defs: [] });
-              const defs = (await processDefinitionApi.list({
-                deploymentId: row.id,
+              const defs = (await getDeployment({
+                name: row.name,
                 firstResult: 0,
                 maxResults: 100,
               })) as ProcessDefinition[];
@@ -86,8 +86,8 @@ export default function DeploymentPage() {
               const defsWithXml = await Promise.all(
                 defList.map(async (d) => {
                   try {
-                    const res = await processDefinitionApi.getXml(d.id);
-                    return { ...d, xml: res?.bpmn20Xml };
+                    const res = await getProcessDefinitionIdXml({ id: d.id });
+                    return { ...d, xml: res };
                   } catch {
                     return d;
                   }
@@ -108,7 +108,7 @@ export default function DeploymentPage() {
           key="del"
           title="Delete this deployment?"
           onConfirm={async () => {
-            await deploymentApi.delete(row.id);
+            await postDeploymentIdOpenApiDelete({ id: row.id });
             message.success('Deleted');
             actionRef.current?.reload();
           }}
@@ -130,7 +130,7 @@ export default function DeploymentPage() {
       return;
     }
     fd.append('file', file, file.name);
-    await deploymentApi.create(fd);
+    await postDeploymentCreate(fd);
     message.success('Deployed successfully');
     setDeployOpen(false);
     form.resetFields();
@@ -145,7 +145,7 @@ export default function DeploymentPage() {
         headerTitle={false}
         columns={columns}
         request={async (params) => {
-          const data = await deploymentApi.list({
+          const data = await getDeployment({
             name: params.name,
             firstResult: ((params.current ?? 1) - 1) * (params.pageSize ?? 20),
             maxResults: params.pageSize,

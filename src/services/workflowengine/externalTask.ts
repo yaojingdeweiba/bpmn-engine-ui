@@ -2,13 +2,13 @@
 /* eslint-disable */
 import { request } from "@umijs/max";
 
-/** List external tasks GET /external-task */
+/** List external tasks GET /workflowengine/external-task */
 export async function getExternalTask(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
   params: API.getExternalTaskParams,
   options?: { [key: string]: any }
 ) {
-  return request<any>("/external-task", {
+  return request<any>("/workflowengine/external-task", {
     method: "GET",
     params: {
       // maxResults has a default value: 20
@@ -19,21 +19,21 @@ export async function getExternalTask(
   });
 }
 
-/** Get external task by ID GET /external-task/${param0} */
+/** Get external task by ID GET /workflowengine/external-task/${param0} */
 export async function getExternalTaskId(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
   params: API.getExternalTaskIdParams,
   options?: { [key: string]: any }
 ) {
   const { id: param0, ...queryParams } = params;
-  return request<any>(`/external-task/${param0}`, {
+  return request<any>(`/workflowengine/external-task/${param0}`, {
     method: "GET",
     params: { ...queryParams },
     ...(options || {}),
   });
 }
 
-/** Throw a BPMN error from an external task (triggers boundary error event) POST /external-task/${param0}/bpmnError */
+/** Throw a BPMN error from an external task (triggers boundary error event) POST /workflowengine/external-task/${param0}/bpmnError */
 export async function postExternalTaskIdBpmnError(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
   params: API.postExternalTaskIdBpmnErrorParams,
@@ -46,7 +46,7 @@ export async function postExternalTaskIdBpmnError(
   options?: { [key: string]: any }
 ) {
   const { id: param0, ...queryParams } = params;
-  return request<any>(`/external-task/${param0}/bpmnError`, {
+  return request<any>(`/workflowengine/external-task/${param0}/bpmnError`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -57,7 +57,7 @@ export async function postExternalTaskIdBpmnError(
   });
 }
 
-/** Complete an external task and resume the process POST /external-task/${param0}/complete */
+/** Complete an external task and resume the process POST /workflowengine/external-task/${param0}/complete */
 export async function postExternalTaskIdComplete(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
   params: API.postExternalTaskIdCompleteParams,
@@ -69,7 +69,7 @@ export async function postExternalTaskIdComplete(
   options?: { [key: string]: any }
 ) {
   const { id: param0, ...queryParams } = params;
-  return request<any>(`/external-task/${param0}/complete`, {
+  return request<any>(`/workflowengine/external-task/${param0}/complete`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -80,7 +80,7 @@ export async function postExternalTaskIdComplete(
   });
 }
 
-/** Extend the lock duration on an external task POST /external-task/${param0}/extendLock */
+/** Extend the lock duration on an external task POST /workflowengine/external-task/${param0}/extendLock */
 export async function postExternalTaskIdExtendLock(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
   params: API.postExternalTaskIdExtendLockParams,
@@ -92,7 +92,7 @@ export async function postExternalTaskIdExtendLock(
   options?: { [key: string]: any }
 ) {
   const { id: param0, ...queryParams } = params;
-  return request<any>(`/external-task/${param0}/extendLock`, {
+  return request<any>(`/workflowengine/external-task/${param0}/extendLock`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -103,7 +103,7 @@ export async function postExternalTaskIdExtendLock(
   });
 }
 
-/** Report a failure for an external task POST /external-task/${param0}/failure */
+/** Report a failure for an external task POST /workflowengine/external-task/${param0}/failure */
 export async function postExternalTaskIdFailure(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
   params: API.postExternalTaskIdFailureParams,
@@ -118,7 +118,7 @@ export async function postExternalTaskIdFailure(
   options?: { [key: string]: any }
 ) {
   const { id: param0, ...queryParams } = params;
-  return request<any>(`/external-task/${param0}/failure`, {
+  return request<any>(`/workflowengine/external-task/${param0}/failure`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -129,21 +129,21 @@ export async function postExternalTaskIdFailure(
   });
 }
 
-/** Release the lock on an external task POST /external-task/${param0}/unlock */
+/** Release the lock on an external task POST /workflowengine/external-task/${param0}/unlock */
 export async function postExternalTaskIdUnlock(
   // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
   params: API.postExternalTaskIdUnlockParams,
   options?: { [key: string]: any }
 ) {
   const { id: param0, ...queryParams } = params;
-  return request<any>(`/external-task/${param0}/unlock`, {
+  return request<any>(`/workflowengine/external-task/${param0}/unlock`, {
     method: "POST",
     params: { ...queryParams },
     ...(options || {}),
   });
 }
 
-/** Fetch and lock external tasks for a worker POST /external-task/fetch-and-lock */
+/** Fetch and lock external tasks for a worker POST /workflowengine/external-task/fetch-and-lock */
 export async function postExternalTaskFetchAndLock(
   body: {
     workerId: string;
@@ -154,7 +154,7 @@ export async function postExternalTaskFetchAndLock(
   },
   options?: { [key: string]: any }
 ) {
-  return request<any>("/external-task/fetch-and-lock", {
+  return request<any>("/workflowengine/external-task/fetch-and-lock", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

@@ -206,7 +206,7 @@ export default function InstanceDetail({ instance, def, onBack }: Props) {
   return (
     <ProCard split="vertical">
       {/* Left sidebar */}
-      <ProCard colSpan={280} style={{ minHeight: 600 }}>
+      <ProCard colSpan="20%" style={{ minHeight: 600 }}>
         <Space direction="vertical" style={{ width: '100%' }} size={0}>
           <Button
             type="text"
